@@ -4,13 +4,13 @@ const bodyParser = require('body-parser');
 const axios = require('axios');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
-const dotenv = require('dotenv');
+require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.json());
 
 
-mongoose.connect("mongodb+srv://kshyamal:8GjWSxPcJlI4a5U4@cluster0.bfgpdp7.mongodb.net/BlogApp?retryWrites=true&w=majority")
+mongoose.connect("mongodb+srv://kshyamal:8GjWSxPcJlI4a5U4@cluster0.bfgpdp7.mongodb.net/Weather?retryWrites=true&w=majority")
 .then(()=>app.listen(5000))
 .then(()=>console.log(console.log('Server is running on http://localhost:5000')))
 .then(()=>console.log("DB Connected"))
@@ -31,6 +31,19 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('user', userSchema);
 
+const weatherKey  = '0a2c6b2ae592fa6177997cdc0f16daf4';
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    user: 'smtp.gmail.com',
+    auth: {
+      type: 'login',
+      user: process.env.User, 
+      pass: process.env.App_Pw,
+    },
+  });
+
+//Add User
 app.post('/users', async(req, res) => {
 
     const { email, location } = req.body;
@@ -59,6 +72,8 @@ app.post('/users', async(req, res) => {
     
 });
 
+
+//Update User Location
 app.put('/users/:id/location', async (req, res) => {
     try {
         
@@ -71,29 +86,31 @@ app.put('/users/:id/location', async (req, res) => {
     }
 });
 
-const weatherKey  = '0a2c6b2ae592fa6177997cdc0f16daf4';
 
-//calling to open weather map Api
-async function getWeatherData(location) {
-    const URL = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${weatherKey}`;
-    const response = await axios.get(URL);
-
-    return {
-        date: new Date(),
-        weather: response.data.weather.description,
-        temperature: response.data.main.temp,
-        humididty: response.data.main.humidity,
-        wind: response.data.wind.speed
-    };
-}
+//Get user by Id
+app.get('/users/:id/weather/:date', async (req, res) => {
+    try {
+      const { id, date } = req.params;
+      const user = await User.findById(id);
+      const weatherData = user.weatherData.filter((data) => {
+        const dataDate = new Date(data.date).toLocaleDateString();
+        return dataDate === date;
+      });
+      res.json(weatherData);
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
 //Scheduling hours
-cron.schedule('0 2 * * * *', async () => {
+cron.schedule('* * 3 * * *', async () => {
     try {
         const users = await User.find();
+        console.log(users, "sxjnwjn");
         for(const user of users){
             const weatherdata = await getWeatherData(user.location);
             user.weatherData.push(weatherdata);
+            //console.log(weatherdata);
             await user.save();
             await weatherReport(user.email, weatherdata);
         }
@@ -102,14 +119,21 @@ cron.schedule('0 2 * * * *', async () => {
     }
 });
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    user: 'smtp.gmail.com',
-    auth: {
-      user: process.env.User, 
-      pass: process.env.App_Pw,
-    },
-  });
+//calling to open weather map Api
+async function getWeatherData(location) {
+    const URL = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${weatherKey}`;
+    const response = await axios.get(URL);
+    console.log("response",response.data.weather[0].description);
+
+    return {
+        date: new Date(),
+        weather: response.data.weather[0].description,
+        temperature: response.data.main.temp,
+        humididty: response.data.main.humidity,
+        wind: response.data.wind.speed
+    };
+}
+
 
 async function weatherReport(email, weatherData){
     const mailOptions = {
@@ -123,7 +147,7 @@ async function weatherReport(email, weatherData){
         await transporter.sendMail(mailOptions);
         console.log(`Weather Report Sent Successfully to ${email}`);
     } catch (error) {
-        console.error('Failed to send email', error);
+        console.error('Failed to send email', error); 
     }
 };
 
