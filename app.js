@@ -38,8 +38,8 @@ const transporter = nodemailer.createTransport({
     user: 'smtp.gmail.com',
     auth: {
       type: 'login',
-      user: 'kasunshyamal24@gmail.com', 
-      pass: 'brmg sldi kbgx smtk',
+      user: process.env.User, 
+      pass: process.env.App_Pw,
     },
   });
 
@@ -137,7 +137,7 @@ async function getWeatherData(location) {
 
 async function weatherReport(email, weatherData){
     const mailOptions = {
-        from: 'kasunshyamal24@gmail.com',
+        from: process.env.User,
         to: email,
         subject: 'Hourley Weather Report',
         text: `Weather Report for your location : \n${JSON.stringify(weatherData, null, 2)}`,
