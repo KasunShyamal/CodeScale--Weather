@@ -103,7 +103,7 @@ app.get('/users/:id/weather/:date', async (req, res) => {
   });
 
 //Scheduling hours
-cron.schedule('1 * * * * *', async () => {
+cron.schedule('* * 3 * * *', async () => {
     try {
         const users = await User.find();
         //console.log(users, "sxjnwjn");
