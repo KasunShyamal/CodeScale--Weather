@@ -10,7 +10,7 @@ const app = express();
 app.use(bodyParser.json());
 
 
-mongoose.connect("mongodb+srv://kshyamal:8GjWSxPcJlI4a5U4@cluster0.bfgpdp7.mongodb.net/Weather?retryWrites=true&w=majority")
+mongoose.connect("mongodb+srv://kshyamal:k8XluKTPtLOLiCIR@cluster0.tohqfwh.mongodb.net/Weather?retryWrites=true&w=majority")
 .then(()=>app.listen(5000))
 .then(()=>console.log(console.log('Server is running on http://localhost:5000')))
 .then(()=>console.log("DB Connected"))
@@ -96,17 +96,17 @@ app.get('/users/:id/weather/:date', async (req, res) => {
         const dataDate = new Date(data.date).toLocaleDateString();
         return dataDate === date;
       });
-      res.json(weatherData);
+      //res.json(weatherData);
     } catch (error) {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
 
 //Scheduling hours
-cron.schedule('* * 3 * * *', async () => {
+cron.schedule('1 * * * * *', async () => {
     try {
         const users = await User.find();
-        console.log(users, "sxjnwjn");
+        //console.log(users, "sxjnwjn");
         for(const user of users){
             const weatherdata = await getWeatherData(user.location);
             user.weatherData.push(weatherdata);
@@ -123,7 +123,7 @@ cron.schedule('* * 3 * * *', async () => {
 async function getWeatherData(location) {
     const URL = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${weatherKey}`;
     const response = await axios.get(URL);
-    console.log("response",response.data.weather[0].description);
+    //console.log("response",response.data.weather[0].description);
 
     return {
         date: new Date(),
